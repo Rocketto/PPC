@@ -57,18 +57,14 @@ if __name__ == "__main__":
         # Création de l'instance partagée
         eco_partage = manager.Ecosysteme()
 
-        subprocess.Popen([sys.executable, str(PREY_PATH)])
-        subprocess.Popen([sys.executable, str(PREDATOR_PATH)])
-
         # Creation des proies
         
         for _ in range(eco_partage.nprey()):
-            subprocess.Popen([sys.executable, str(PREY_PATH)])
+            subprocess.Popen([sys.executable, str(BASE_DIR / "prey.py")])
 
         # Creation des prédateurs
         for _ in range(eco_partage.npredators()):
-            subprocess.Popen([sys.executable, str(PREDATOR_PATH)])
-
+            subprocess.Popen([sys.executable, str(BASE_DIR / "predator.py")])
 
 
 
