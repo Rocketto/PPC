@@ -1,10 +1,48 @@
 # environment.py
 import time
 from multiprocessing import Process, Value, Lock, Queue
+from multiprocessing.managers import BaseManager
 from prey import Prey
 from animal import Animal
 from predator import Predator
 from display import Display
+
+
+class Ecosysteme:
+
+    def __init__(self):
+        parametres = {
+        "predator": {
+            "count": 2,
+            "energy": 40,
+            "hunger": 20,
+            "reproduction": 70
+        },
+        "prey": {
+            "count": 10,
+            "energy": 25,
+            "hunger": 20,
+            "reproduction": 60
+        },
+        "env": {
+            "grass": {
+                "init": 200,
+                "max": 300,
+                "croissance": 7
+            }
+        }}
+
+
+
+class EcosystemeManager(BaseManager): 
+    pass # On crée une sous-classe vide
+
+# On enregistre la classe 'MonEcosysteme' sous le nom de clé 'Ecosysteme'
+EcosystemeManager.register('Ecosysteme', Ecosysteme) #le nom de la mémoire partagée est 'Ecosysteme'
+
+
+
+
 
 def run_environment():
     # Parametres d'execution
@@ -30,6 +68,9 @@ def run_environment():
             }
         }
     }
+
+
+
     # Etat de l'herbe en memoire partagée
     # Type réel, car facteur de croissance reel
     grass_lock = Lock()
@@ -40,6 +81,10 @@ def run_environment():
     display_queue = Queue()
     display_process = Process(target=Display.start,args=(Display(display_queue),))
     display_process.start()
+
+    # file communication animal vers environnement
+    requete_env = Queue()  
+
     # Creation des proies
     proies = []
     for _ in range(parameters["prey"]["count"]):
@@ -48,8 +93,6 @@ def run_environment():
         p.start()
         proies.append(p)
 
-    # file communication animal vers environnement
-    requete_env = Queue()  
 
     # Creation des prédateurs
     reponse_predateur = {}
