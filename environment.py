@@ -23,14 +23,16 @@ class Ecosysteme:
             "reproduction": 0
         },
         "prey": {
-            "count": 2,
-            "reproduction": 0
+            "count": 1,
+            "reproduction": 0,
+            "pids": [],          # toutes les proies vivantes
+            "mangeables": []     # proies “actives / mangeables”
         },
         "env": {
             "grass": {
-                "count": 200,           #valeur initiale de l'herbe
-                "max": 300,
-                "croissance": 7},
+                "count": 30,           #valeur initiale de l'herbe
+                "max": 60,
+                "croissance": 3},
             
             "temps": {
                 "tick" : 0},
@@ -48,12 +50,14 @@ class Ecosysteme:
         return self.parametres
     
     def inc_tick(self): # Incrémente le tick et retourne la nouvelle valeur
-        self.parametres["env"]["temps"]["tick"] += 1
-        return self.parametres["env"]["temps"]["tick"]
+        with self._lock:
+            self.parametres["env"]["temps"]["tick"] += 1
+            return self.parametres["env"]["temps"]["tick"]
     
     def herbe_pousse(self):
-        self.parametres["env"]["grass"]["count"] += self.parametres["env"]["grass"]["croissance"]
-        return self.parametres["env"]["grass"]["count"]
+        with self._lock:
+            self.parametres["env"]["grass"]["count"] += self.parametres["env"]["grass"]["croissance"]
+            return self.parametres["env"]["grass"]["count"]
    
     # Sécheresse
 
@@ -108,28 +112,42 @@ class Ecosysteme:
             return eaten
 
     # Partie prédateurs
+
     def register_prey(self, pid: int):
-    with self._lock:
-        self.prey_pids.add(int(pid))
-        return len(self.prey_pids)
+        with self._lock:
+            pid = int(pid)
+            if pid not in self.parametres["prey"]["pids"]:
+                self.parametres["prey"]["pids"].append(pid)
+            return True
 
     def unregister_prey(self, pid: int):
         with self._lock:
-            self.prey_pids.discard(int(pid))
-            return len(self.prey_pids)
+            pid = int(pid)
+            if pid in self.parametres["prey"]["pids"]:
+                self.parametres["prey"]["pids"].remove(pid)
+            if pid in self.parametres["prey"]["mangeables"]:
+                self.parametres["prey"]["mangeables"].remove(pid)
+            return True
 
-    def list_prey_pids(self):
+    def set_prey_mangeable(self, pid: int, mangeable: bool):
         with self._lock:
-            return list(self.prey_pids)
+            pid = int(pid)
+            if mangeable:
+                if pid in self.parametres["prey"]["pids"] and pid not in self.parametres["prey"]["mangeables"]:
+                    self.parametres["prey"]["mangeables"].append(pid)
+            else:
+                if pid in self.parametres["prey"]["mangeables"]:
+                    self.parametres["prey"]["mangeables"].remove(pid)
+            return True
 
-    def pick_prey_pid(self):
-        """Retourne un PID de proie (et le retire de la liste) pour éviter 2 predators sur la même proie."""
+    def pick_mangeable_prey(self):
+        """Atomique: prend une proie mangeable et l'enlève de la liste."""
         with self._lock:
-            if not self.prey_pids:
+            if not self.parametres["prey"]["mangeables"]:
                 return None
-            pid = next(iter(self.prey_pids))
-            self.prey_pids.remove(pid)
+            pid = self.parametres["prey"]["mangeables"].pop(0)  # ou random, plus tard si on arrive à mettre des semaphores pour plusieurs prédateurs
             return pid
+
 
 
 # Temps qui passe 
@@ -229,45 +247,60 @@ def run_manager_server():
 
 if __name__ == "__main__":
 
-
-    ##TEST de la sécheresse forcée 
+    ## Test environnement normal
     # Démarre le serveur BaseManager (pour prey/predator), serveur longue distance
     threading.Thread(target=run_manager_server, daemon=True).start()
-
     # Démarre le serveur TCP (pour recevoir PID des predators)
     threading.Thread(target=tcp_server_loop, daemon=True).start()
     time.sleep(1)  # Attendre que le serveur démarre
-
     # Démarre la "vie du monde" EN THREADS 
     time_thread = threading.Thread(target=time_pass, args=(eco_global,), daemon=True)
     grass_thread = threading.Thread(target=grass_growth, args=(eco_global,), daemon=True)
-
     time_thread.start()
     grass_thread.start()
 
-    # Spawn une proie test 
-    subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "prey.py")])
+    # Creation des proies
+    for _ in range(eco_global.get_parametres()["prey"]["count"]):
+        subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "prey.py")])
+    # Creation des prédateurs
+    for _ in range(eco_global.get_parametres()["predator"]["count"]):
+        subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "predator.py")])
 
-    # Test sécheresse (dans le même process => pas de copie)
-    time.sleep(5)
-    print("[env] forcing drought")
-    eco_global.active_secheresse()
-    time.sleep(5)
-    print("ça repousse")
-
-    # Boucle principale
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         print("[env] stopping")
 
-
-
+    # ## Test de la sécheresse forcée 
+    # # Démarre le serveur BaseManager (pour prey/predator), serveur longue distance
+    # threading.Thread(target=run_manager_server, daemon=True).start()
+    # # Démarre le serveur TCP (pour recevoir PID des predators)
+    # threading.Thread(target=tcp_server_loop, daemon=True).start()
+    # time.sleep(1)  # Attendre que le serveur démarre
+    # # Démarre la "vie du monde" EN THREADS 
+    # time_thread = threading.Thread(target=time_pass, args=(eco_global,), daemon=True)
+    # grass_thread = threading.Thread(target=grass_growth, args=(eco_global,), daemon=True)
+    # time_thread.start()
+    # grass_thread.start()
+    # # Spawn une proie test 
+    # subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "prey.py")])
+    # # Test sécheresse (dans le même process => pas de copie)
+    # time.sleep(5)
+    # print("[env] forcing drought")
+    # eco_global.active_secheresse()
+    # time.sleep(5)
+    # print("ça repousse")
+    # # Boucle principale
+    # try:
+    #     while True:
+    #         time.sleep(1)
+    # except KeyboardInterrupt:
+    #     print("[env] stopping")
 
     
 
-    # # Test serveur TCP
+    # ## Test serveur TCP
     # # Démarrage du serveur TCP dans un thread séparé
     # threading.Thread(target=tcp_server_loop, daemon=True).start()
     # time.sleep(1)  # Attendre que le serveur démarre
@@ -275,21 +308,7 @@ if __name__ == "__main__":
     # subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "prey.py")])
     # subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "predator.py")])
 
-    # # Creation des proies
-    # threading.Thread(target=tcp_server_loop, daemon=True).start()
-    # time.sleep(1)  # Attendre que le serveur démarre
-    # for _ in range(eco_global.get_parametres()["prey"]["count"]):
-    #     subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "prey.py")])
-
-    # # Creation des prédateurs
-    # for _ in range(eco_global.get_parametres()["predator"]["count"]):
-    #     subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "predator.py")])
-
-    # try:
-    #     while True:
-    #         time.sleep(1)
-    # except KeyboardInterrupt:
-    #     print("[env] stopping")
+    
         
 
 

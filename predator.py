@@ -39,15 +39,15 @@ def main():
     m.connect()
     eco = m.get_ecosysteme()
 
-    energy = 40
-    hunger_threshold = 20
+    energy = 90
+    hunger_threshold = 85
 
     while True:
         time.sleep(1)
-        energy -= 1
+        energy -= 4
 
         if energy < hunger_threshold:
-            prey_pid = eco.pick_prey_pid()   # atomique: récupère + retire
+            prey_pid = eco.pick_mangeable_prey()  # atomique: récupère + retire
             if prey_pid is None:
                 print(f"[predator {pid}] hungry but no prey")
                 continue
@@ -55,7 +55,7 @@ def main():
             # 3) tuer la proie (PID)
             try:
                 os.kill(prey_pid, signal.SIGTERM)
-                energy += 15
+                energy += 70
                 print(f"[predator {pid}] ate prey pid={prey_pid} -> energy={energy}")
             except ProcessLookupError:
                 # la proie était déjà morte
