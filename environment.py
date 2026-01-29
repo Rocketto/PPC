@@ -23,7 +23,7 @@ class Ecosysteme:
             "reproduction": 0
         },
         "prey": {
-            "count": 1,
+            "count": 10,
             "reproduction": 0,
             "pids": [],          # toutes les proies vivantes
             "mangeables": []     # proies “actives / mangeables”
@@ -67,6 +67,7 @@ class Ecosysteme:
             self.parametres["env"]["secheresse"]["nombre"] += 1
 
     def is_drought_active(self):
+        """Renvoie si la sécheresse est active"""
         with self._lock:
             return self.parametres["env"]["secheresse"]["active"]
 
@@ -118,6 +119,7 @@ class Ecosysteme:
             pid = int(pid)
             if pid not in self.parametres["prey"]["pids"]:
                 self.parametres["prey"]["pids"].append(pid)
+                self.parametres["prey"]["count"] += 1
             return True
 
     def unregister_prey(self, pid: int):
@@ -125,6 +127,7 @@ class Ecosysteme:
             pid = int(pid)
             if pid in self.parametres["prey"]["pids"]:
                 self.parametres["prey"]["pids"].remove(pid)
+                self.parametres["prey"]["count"] -= 1
             if pid in self.parametres["prey"]["mangeables"]:
                 self.parametres["prey"]["mangeables"].remove(pid)
             return True
@@ -248,6 +251,13 @@ def run_manager_server():
 if __name__ == "__main__":
 
     ## Test environnement normal
+    # Communication vers le display
+    display_queue = Queue()
+    display_process = Process(target=Display.start,args=(Display(display_queue),))
+    display_process.start()
+
+    # On crée un dictionnaire dans lequel on va entrer le nombre d'entités de chaque population
+    population = dict()
     # Démarre le serveur BaseManager (pour prey/predator), serveur longue distance
     threading.Thread(target=run_manager_server, daemon=True).start()
     # Démarre le serveur TCP (pour recevoir PID des predators)
@@ -268,6 +278,10 @@ if __name__ == "__main__":
 
     try:
         while True:
+            population["grass"] = eco_global.get_parametres()["env"]["grass"]["count"]
+            population["prey"] = eco_global.get_parametres()["prey"]["count"]
+            population["predator"] = eco_global.get_parametres()["predator"]["count"]
+            display_queue.put(population)    
             time.sleep(1)
     except KeyboardInterrupt:
         print("[env] stopping")
