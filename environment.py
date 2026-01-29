@@ -6,8 +6,7 @@ from multiprocessing.managers import BaseManager
 #from animal import Animal
 #from predator import Predator
 from display import Display
-import socket
-import threading
+import socket, threading, signal, os
 
 class Ecosysteme:
 
@@ -119,7 +118,6 @@ class Ecosysteme:
             pid = int(pid)
             if pid not in self.parametres["prey"]["pids"]:
                 self.parametres["prey"]["pids"].append(pid)
-                self.parametres["prey"]["count"] += 1
             return True
 
     def unregister_prey(self, pid: int):
@@ -127,7 +125,6 @@ class Ecosysteme:
             pid = int(pid)
             if pid in self.parametres["prey"]["pids"]:
                 self.parametres["prey"]["pids"].remove(pid)
-                self.parametres["prey"]["count"] -= 1
             if pid in self.parametres["prey"]["mangeables"]:
                 self.parametres["prey"]["mangeables"].remove(pid)
             return True
@@ -188,8 +185,8 @@ def grass_growth(eco):
 #         serveur_partage.reset_grass_count()
 #         time.sleep(serveur_partage.get_parametres()["env"]["secheresse"]["duree"]) 
 
-def secheresse_event(serveur_partage):
-    serveur_partage.active_secheresse()
+def secheresse_event(eco_global):
+    eco_global.active_secheresse()
 
 
 
@@ -246,14 +243,21 @@ def run_manager_server():
     print(f"[env] EcosystemeManager listening on {MANAGER_HOST}:{MANAGER_PORT}")
     server.serve_forever()
 
-
+def handle_display_signal(signum, frame):
+    if signum == signal.SIGUSR1:
+        eco_global.active_secheresse()
+    else:
+        subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "prey.py")])
 
 if __name__ == "__main__":
 
-    ## Test environnement normal
+    # Réception des signaux envoyés par Display
+    signal.signal(signal.SIGUSR1, handle_display_signal)
+    signal.signal(signal.SIGUSR2, handle_display_signal)
+
     # Communication vers le display
     display_queue = Queue()
-    display_process = Process(target=Display.start,args=(Display(display_queue),))
+    display_process = Process(target=Display.start,args=(Display(display_queue, os.getpid()),))
     display_process.start()
 
     # On crée un dictionnaire dans lequel on va entrer le nombre d'entités de chaque population
@@ -279,7 +283,7 @@ if __name__ == "__main__":
     try:
         while True:
             population["grass"] = eco_global.get_parametres()["env"]["grass"]["count"]
-            population["prey"] = eco_global.get_parametres()["prey"]["count"]
+            population["prey"] = len(eco_global.get_parametres()["prey"]["pids"])
             population["predator"] = eco_global.get_parametres()["predator"]["count"]
             display_queue.put(population)    
             time.sleep(1)

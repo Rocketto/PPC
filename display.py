@@ -1,12 +1,14 @@
-import time, logging
+import time, logging, os, signal
 from collections import deque
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.widgets import Button
 
 
 class Display:
-    def __init__(self, queue):
+    def __init__(self, queue, env_pid):
         self.queue = queue
+        self.env_pid = env_pid
 
     def start(self):
         plt.style.use("dark_background")
@@ -51,6 +53,30 @@ class Display:
             ax.set_ylim(0, max(max(proie), max(predateur), max(herbe)) * 1.2)
 
             return line_proie, line_predateur, line_herbe
+        
+        # Bouton sécheresse
+        button_ax = plt.axes([0.05, 0.9, 0.15, 0.05])
+        button = Button(button_ax, "Secheresse")
+        button.label.set_color("red")
+
+        # Callback du bouton sécheresse
+        def activer_secheresse(event):
+            os.kill(self.env_pid, signal.SIGUSR1)
+
+        button.on_clicked(activer_secheresse)
+
+        # Bouton proie
+        button_ax = plt.axes([0.7, 0.9, 0.15, 0.05])
+        button = Button(button_ax, "Proie")
+        button.label.set_color("red")
+
+        # Callback du bouton sécheresse
+        def add_proie(event):
+            os.kill(self.env_pid, signal.SIGUSR2)
+
+        button.on_clicked(add_proie)
+
+
 
         ani = animation.FuncAnimation(fig, update, interval=50)
         plt.show()
