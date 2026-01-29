@@ -34,6 +34,25 @@ class Display:
 
         ax.legend(loc="upper right")
 
+        proie_texte = ax.text(
+        0.9, 0.7,"",
+        transform=ax.transAxes,
+        ha="center", va="center",
+        fontsize=8)        
+        
+        predateur_texte = ax.text(
+        0.9, 0.65,"",
+        transform=ax.transAxes,
+        ha="center", va="center",
+        fontsize=8)        
+        
+        herbe_texte = ax.text(
+        0.9, 0.6,"",
+        transform=ax.transAxes,
+        ha="center", va="center",
+        fontsize=8)
+
+
         start = time.time()
 
         def update(frame):
@@ -44,6 +63,9 @@ class Display:
                 proie.append(population["prey"])
                 predateur.append(population["predator"])
                 herbe.append(population["grass"])
+                proie_texte.set_text(f"Proies : {population['prey']}")
+                predateur_texte.set_text(f"Predateurs : {population['predator']}")
+                herbe_texte.set_text(f"Herbe : {population['grass']}")
 
             if not t:
                 return line_proie, line_predateur, line_herbe

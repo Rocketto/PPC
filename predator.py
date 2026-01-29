@@ -67,7 +67,7 @@ def main():
                     eco.set_prey_mangeable(prey_pid, False)
                     eco.unregister_prey(prey_pid)
                     print(f"[prey] cleanup done pid={prey_pid}")            
-                    energy += 70
+                    energy += 20
                     print(
                         f"[predator {pid}] ate prey pid={prey_pid} -> energy={energy}")
                 except ProcessLookupError:
