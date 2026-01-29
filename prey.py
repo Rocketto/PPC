@@ -9,7 +9,11 @@ TCP_PORT = 50010
 MANAGER_PORT = 50020
 AUTH = b"PPC"
 
-class EcosystemeManager(BaseManager): pass
+
+class EcosystemeManager(BaseManager):
+    pass
+
+
 EcosystemeManager.register("get_ecosysteme")
 
 
@@ -30,13 +34,13 @@ def main():
         print(f"[prey] Mon PID est {pid}")
     except Exception as e:
         print(f"[prey] Il n'y a plus de serveur... {e}")
-    
+
     # Paramètres prey (possible recup depuis eco)
     energy = 55
     hunger_threshold = 50     # si energy < 20 => manger
     energy_loss_per_sec = 3
     eat_amount = 1            # herbe demandée par “bouchée”
-    energy_gain_per_grass = 6 # 1 herbe -> +3 énergie
+    energy_gain_per_grass = 6  # 1 herbe -> +3 énergie
 
     try:
         while True:
@@ -44,16 +48,18 @@ def main():
             energy -= energy_loss_per_sec
 
             # "mangeable" = proie active (par ex quand elle a faim)
-            is_mangeable = energy < hunger_threshold   #a changer
+            is_mangeable = energy < hunger_threshold  # a changer
             eco.set_prey_mangeable(pid, is_mangeable)
 
             if is_mangeable:
                 eaten = eco.take_grass(eat_amount)
                 if eaten > 0:
                     energy += eaten * energy_gain_per_grass
-                    print(f"[prey {pid}] ate {eaten} grass -> energy={energy} (grass_left={eco.get_grass_count()})")
+                    print(
+                        f"[prey {pid}] ate {eaten} grass -> energy={energy} (grass_left={eco.get_grass_count()})")
                 else:
-                    print(f"[prey {pid}] hungry but no grass -> energy={energy}")
+                    print(
+                        f"[prey {pid}] hungry but no grass -> energy={energy}")
 
             if energy < 0:
                 print(f"[prey {pid}] died (energy<0)")
@@ -67,4 +73,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

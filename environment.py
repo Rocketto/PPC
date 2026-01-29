@@ -1,12 +1,21 @@
 # environment.py
+import threading
+import socket
+from pathlib import Path
+import sys
+import subprocess
 import time
 from multiprocessing import Process, Value, Lock, Queue
 from multiprocessing.managers import BaseManager
-#from prey import Prey
-#from animal import Animal
-#from predator import Predator
+# from prey import Prey
+# from animal import Animal
+# from predator import Predator
 from display import Display
-import socket, threading, signal, os
+import socket
+import threading
+import signal
+import os
+
 
 class Ecosysteme:
 
@@ -17,47 +26,47 @@ class Ecosysteme:
         self.prey_pids = set()  # PIDs des proies connectées
 
         self.parametres = {
-        "predator": {
-            "count": 1,
-            "reproduction": 0
-        },
-        "prey": {
-            "count": 10,
-            "reproduction": 0,
-            "pids": [],          # toutes les proies vivantes
-            "mangeables": []     # proies “actives / mangeables”
-        },
-        "env": {
-            "grass": {
-                "count": 30,           #valeur initiale de l'herbe
-                "max": 60,
-                "croissance": 3},
-            
-            "temps": {
-                "tick" : 0},
+            "predator": {
+                "count": 1,
+                "reproduction": 0
+            },
+            "prey": {
+                "count": 10,
+                "reproduction": 0,
+                "pids": [],          # toutes les proies vivantes
+                "mangeables": []     # proies “actives / mangeables”
+            },
+            "env": {
+                "grass": {
+                    "count": 30,  # valeur initiale de l'herbe
+                    "max": 60,
+                    "croissance": 3},
 
-            "secheresse": {
-                "active": False,
-                "nombre": 0,
-                "duree": 5}
-            
-        }
-        
+                "temps": {
+                    "tick": 0},
+
+                "secheresse": {
+                    "active": False,
+                    "nombre": 0,
+                    "duree": 5}
+
+            }
+
         }
 
     def get_parametres(self):
         return self.parametres
-    
-    def inc_tick(self): # Incrémente le tick et retourne la nouvelle valeur
+
+    def inc_tick(self):  # Incrémente le tick et retourne la nouvelle valeur
         with self._lock:
             self.parametres["env"]["temps"]["tick"] += 1
             return self.parametres["env"]["temps"]["tick"]
-    
+
     def herbe_pousse(self):
         with self._lock:
             self.parametres["env"]["grass"]["count"] += self.parametres["env"]["grass"]["croissance"]
             return self.parametres["env"]["grass"]["count"]
-   
+
     # Sécheresse
 
     def active_secheresse(self):
@@ -81,16 +90,15 @@ class Ecosysteme:
     def get_drought_duration(self):
         with self._lock:
             return self.parametres["env"]["secheresse"]["duree"]
-        
+
     def get_grass_max(self):
         with self._lock:
             return self.parametres["env"]["grass"]["max"]
 
-
     # def active_secheresse(self):
-    #     self.parametres["env"]["secheresse"]["active"] = True 
-    #     self.parametres["env"]["secheresse"]["nombre"] += 1   
-    
+    #     self.parametres["env"]["secheresse"]["active"] = True
+    #     self.parametres["env"]["secheresse"]["nombre"] += 1
+
     # def reset_grass_count(self):
     #     self.parametres["env"]["grass"]["count"] = 0
     #     self.parametres["env"]["secheresse"]["active"] = False
@@ -145,12 +153,12 @@ class Ecosysteme:
         with self._lock:
             if not self.parametres["prey"]["mangeables"]:
                 return None
-            pid = self.parametres["prey"]["mangeables"].pop(0)  # ou random, plus tard si on arrive à mettre des semaphores pour plusieurs prédateurs
+            # ou random, plus tard si on arrive à mettre des semaphores pour plusieurs prédateurs
+            pid = self.parametres["prey"]["mangeables"].pop(0)
             return pid
 
 
-
-# Temps qui passe 
+# Temps qui passe
 
 def time_pass(serveur_partage):
     while True:
@@ -158,6 +166,7 @@ def time_pass(serveur_partage):
         serveur_partage.inc_tick()
 
 # Croissance de l'herbe
+
 
 def grass_growth(eco):
     while True:
@@ -183,24 +192,21 @@ def grass_growth(eco):
 
 #         # si la sécheresse est active
 #         serveur_partage.reset_grass_count()
-#         time.sleep(serveur_partage.get_parametres()["env"]["secheresse"]["duree"]) 
+#         time.sleep(serveur_partage.get_parametres()["env"]["secheresse"]["duree"])
+
 
 def secheresse_event(eco_global):
     eco_global.active_secheresse()
 
 
+class EcosystemeManager(BaseManager):
+    pass  # On crée une sous-classe vide
 
-class EcosystemeManager(BaseManager):  pass # On crée une sous-classe vide
 
 # On enregistre la classe 'MonEcosysteme' sous le nom de clé 'Ecosysteme'
 eco_global = Ecosysteme()
 EcosystemeManager.register("get_ecosysteme", callable=lambda: eco_global)
 
-
-
-import subprocess
-import sys
-from pathlib import Path
 
 # Chemin d'accès du projet
 
@@ -208,14 +214,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Session TCP pour communication avec les prédateurs
 
-import socket
-import threading
 
 MANAGER_HOST = "localhost"
 MANAGER_PORT = 50020
 TCP_HOST = "localhost"
 TCP_PORT = 50010
 AUTH = b"PPC"
+
 
 def tcp_server_loop():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as srv:
@@ -227,27 +232,33 @@ def tcp_server_loop():
         while True:
             conn, addr = srv.accept()
             with conn:
-                data = conn.recv(1024).decode("utf-8", errors="replace").strip()
+                data = conn.recv(1024).decode(
+                    "utf-8", errors="replace").strip()
                 # ici on attend juste un PID sur une ligne
                 if data.isdigit():
                     print(f"[env] connected from {addr}, pid={data}")
                 else:
-                    print(f"[env] connection from {addr}, invalid pid='{data}'")
+                    print(
+                        f"[env] connection from {addr}, invalid pid='{data}'")
 
 
-#Manager longue distance 
+# Manager longue distance
 
 def run_manager_server():
-    manager = EcosystemeManager(address=(MANAGER_HOST, MANAGER_PORT), authkey=AUTH)
+    manager = EcosystemeManager(
+        address=(MANAGER_HOST, MANAGER_PORT), authkey=AUTH)
     server = manager.get_server()
-    print(f"[env] EcosystemeManager listening on {MANAGER_HOST}:{MANAGER_PORT}")
+    print(
+        f"[env] EcosystemeManager listening on {MANAGER_HOST}:{MANAGER_PORT}")
     server.serve_forever()
+
 
 def handle_display_signal(signum, frame):
     if signum == signal.SIGUSR1:
         eco_global.active_secheresse()
     else:
         subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "prey.py")])
+
 
 if __name__ == "__main__":
 
@@ -257,7 +268,8 @@ if __name__ == "__main__":
 
     # Communication vers le display
     display_queue = Queue()
-    display_process = Process(target=Display.start,args=(Display(display_queue, os.getpid()),))
+    display_process = Process(target=Display.start, args=(
+        Display(display_queue, os.getpid()),))
     display_process.start()
 
     # On crée un dictionnaire dans lequel on va entrer le nombre d'entités de chaque population
@@ -267,9 +279,11 @@ if __name__ == "__main__":
     # Démarre le serveur TCP (pour recevoir PID des predators)
     threading.Thread(target=tcp_server_loop, daemon=True).start()
     time.sleep(1)  # Attendre que le serveur démarre
-    # Démarre la "vie du monde" EN THREADS 
-    time_thread = threading.Thread(target=time_pass, args=(eco_global,), daemon=True)
-    grass_thread = threading.Thread(target=grass_growth, args=(eco_global,), daemon=True)
+    # Démarre la "vie du monde" EN THREADS
+    time_thread = threading.Thread(
+        target=time_pass, args=(eco_global,), daemon=True)
+    grass_thread = threading.Thread(
+        target=grass_growth, args=(eco_global,), daemon=True)
     time_thread.start()
     grass_thread.start()
 
@@ -278,30 +292,34 @@ if __name__ == "__main__":
         subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "prey.py")])
     # Creation des prédateurs
     for _ in range(eco_global.get_parametres()["predator"]["count"]):
-        subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "predator.py")])
+        subprocess.Popen([sys.executable, str(
+            BASE_DIR / "PPC" / "predator.py")])
 
     try:
         while True:
-            population["grass"] = eco_global.get_parametres()["env"]["grass"]["count"]
-            population["prey"] = len(eco_global.get_parametres()["prey"]["pids"])
-            population["predator"] = eco_global.get_parametres()["predator"]["count"]
-            display_queue.put(population)    
+            population["grass"] = eco_global.get_parametres()[
+                "env"]["grass"]["count"]
+            population["prey"] = len(
+                eco_global.get_parametres()["prey"]["pids"])
+            population["predator"] = eco_global.get_parametres()[
+                "predator"]["count"]
+            display_queue.put(population)
             time.sleep(1)
     except KeyboardInterrupt:
         print("[env] stopping")
 
-    # ## Test de la sécheresse forcée 
+    # ## Test de la sécheresse forcée
     # # Démarre le serveur BaseManager (pour prey/predator), serveur longue distance
     # threading.Thread(target=run_manager_server, daemon=True).start()
     # # Démarre le serveur TCP (pour recevoir PID des predators)
     # threading.Thread(target=tcp_server_loop, daemon=True).start()
     # time.sleep(1)  # Attendre que le serveur démarre
-    # # Démarre la "vie du monde" EN THREADS 
+    # # Démarre la "vie du monde" EN THREADS
     # time_thread = threading.Thread(target=time_pass, args=(eco_global,), daemon=True)
     # grass_thread = threading.Thread(target=grass_growth, args=(eco_global,), daemon=True)
     # time_thread.start()
     # grass_thread.start()
-    # # Spawn une proie test 
+    # # Spawn une proie test
     # subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "prey.py")])
     # # Test sécheresse (dans le même process => pas de copie)
     # time.sleep(5)
@@ -316,8 +334,6 @@ if __name__ == "__main__":
     # except KeyboardInterrupt:
     #     print("[env] stopping")
 
-    
-
     # ## Test serveur TCP
     # # Démarrage du serveur TCP dans un thread séparé
     # threading.Thread(target=tcp_server_loop, daemon=True).start()
@@ -325,18 +341,3 @@ if __name__ == "__main__":
     # # Creation des proies
     # subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "prey.py")])
     # subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "predator.py")])
-
-    
-        
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,4 +1,7 @@
-import time, logging, os, signal
+import time
+import logging
+import os
+import signal
 from collections import deque
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -53,7 +56,7 @@ class Display:
             ax.set_ylim(0, max(max(proie), max(predateur), max(herbe)) * 1.2)
 
             return line_proie, line_predateur, line_herbe
-        
+
         # Bouton sécheresse
         button_sech_ax = plt.axes([0.05, 0.9, 0.15, 0.05])
         button_sech = Button(button_sech_ax, "Secheresse")
@@ -75,8 +78,6 @@ class Display:
             os.kill(self.env_pid, signal.SIGUSR2)
 
         button_proie.on_clicked(add_proie)
-
-
 
         ani = animation.FuncAnimation(fig, update, interval=50)
         plt.show()

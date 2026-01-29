@@ -15,14 +15,18 @@ MANAGER_HOST = "localhost"
 MANAGER_PORT = 50020
 AUTH = b"PPC"
 
-class EcosystemeManager(BaseManager): 
+
+class EcosystemeManager(BaseManager):
     pass
 
-EcosystemeManager.register("get_ecosysteme") 
+
+EcosystemeManager.register("get_ecosysteme")
+
 
 def announce_pid_to_env(pid: int):
     with socket.create_connection((ENV_HOST, TCP_PORT), timeout=3) as s:
         s.sendall(f"{pid}\n".encode("utf-8"))   # envoi PID + \n
+
 
 def main():
     pid = os.getpid()
@@ -56,10 +60,12 @@ def main():
             try:
                 os.kill(prey_pid, signal.SIGTERM)
                 energy += 70
-                print(f"[predator {pid}] ate prey pid={prey_pid} -> energy={energy}")
+                print(
+                    f"[predator {pid}] ate prey pid={prey_pid} -> energy={energy}")
             except ProcessLookupError:
                 # la proie était déjà morte
                 print(f"[predator {pid}] prey pid={prey_pid} already dead")
+
 
 if __name__ == "__main__":
     main()
