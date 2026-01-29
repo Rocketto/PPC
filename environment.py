@@ -27,11 +27,15 @@ class Ecosysteme:
 
         self.parametres = {
             "predator": {
-                "count": 1,
+                "start_energy": 30,
+                "hunger_threshold": 25,
+                "count": 3,
                 "reproduction": 0,
                 "pids": []  # Tous les prédateurs vivants
             },
             "prey": {
+                "start_energy": 30,
+                "hunger_threshold": 25,                
                 "count": 10,
                 "reproduction": 0,
                 "pids": [],          # toutes les proies vivantes
@@ -184,7 +188,7 @@ def grass_growth(eco):
         if not eco.is_drought_active():
             if eco.get_grass_count() < eco.get_grass_max():
                 eco.herbe_pousse()
-                print(f"[env] grass grown to {eco.get_grass_count()}")
+                # print(f"[env] grass grown to {eco.get_grass_count()}")
             time.sleep(1)
         else:
             print("[env] drought ON -> reset grass")
@@ -319,6 +323,7 @@ if __name__ == "__main__":
             population["predator"] = len(eco_global.get_parametres()[
                 "predator"]["pids"])
             display_queue.put(population)
+            print(len(eco_global.get_parametres()["prey"]["mangeables"]))
             time.sleep(1)
     except KeyboardInterrupt:
         print("[env] stopping")

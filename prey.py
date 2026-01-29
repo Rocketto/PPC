@@ -21,6 +21,8 @@ def main():
     pid = os.getpid()
     print(f"[prey] Début du processus :{pid}")
 
+
+
     # Connexion au manager de environment
     m = EcosystemeManager(address=(ENV_HOST, MANAGER_PORT), authkey=AUTH)
     m.connect()
@@ -36,9 +38,9 @@ def main():
         print(f"[prey] Il n'y a plus de serveur... {e}")
 
     # Paramètres prey (possible recup depuis eco)
-    energy = 55
-    hunger_threshold = 10     # si energy < 20 => manger
-    energy_loss_per_sec = 3
+    energy = eco.get_parametres()["prey"]["start_energy"]
+    hunger_threshold = eco.get_parametres()["prey"]["hunger_threshold"]
+    energy_loss_per_sec = 1
     eat_amount = 1            # herbe demandée par “bouchée”
     energy_gain_per_grass = 6  # 1 herbe -> +3 énergie
 

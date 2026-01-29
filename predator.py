@@ -46,13 +46,14 @@ def main():
     # Enregistrement dans la mémoire partagée
     eco.register_predator(pid)
 
-    energy = 90
-    hunger_threshold = 85
+    energy = eco.get_parametres()["predator"]["start_energy"]
+    hunger_threshold = eco.get_parametres()["predator"]["hunger_threshold"]
+    energy_loss_per_sec = 1
 
     try:
         while True:
             time.sleep(1)
-            energy -= 4
+            energy -= energy_loss_per_sec
 
             if energy < hunger_threshold:
                 prey_pid = eco.pick_mangeable_prey()  # atomique: récupère + retire
@@ -63,6 +64,9 @@ def main():
                 # 3) tuer la proie (PID)
                 try:
                     os.kill(prey_pid, signal.SIGTERM)
+                    eco.set_prey_mangeable(prey_pid, False)
+                    eco.unregister_prey(prey_pid)
+                    print(f"[prey] cleanup done pid={prey_pid}")            
                     energy += 70
                     print(
                         f"[predator {pid}] ate prey pid={prey_pid} -> energy={energy}")
