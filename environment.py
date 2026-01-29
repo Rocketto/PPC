@@ -15,18 +15,16 @@ class Ecosysteme:
 
         self._lock = threading.Lock()  # mutex interne côté serveur
 
+        self.prey_pids = set()  # PIDs des proies connectées
+
         self.parametres = {
         "predator": {
             "count": 1,
-            "energy": 40,
-            "hunger": 20,
-            "reproduction": 70
+            "reproduction": 0
         },
         "prey": {
             "count": 2,
-            "energy": 25,
-            "hunger": 20,
-            "reproduction": 60
+            "reproduction": 0
         },
         "env": {
             "grass": {
@@ -109,7 +107,30 @@ class Ecosysteme:
             self.parametres["env"]["grass"]["count"] = g - eaten
             return eaten
 
-    
+    # Partie prédateurs
+    def register_prey(self, pid: int):
+    with self._lock:
+        self.prey_pids.add(int(pid))
+        return len(self.prey_pids)
+
+    def unregister_prey(self, pid: int):
+        with self._lock:
+            self.prey_pids.discard(int(pid))
+            return len(self.prey_pids)
+
+    def list_prey_pids(self):
+        with self._lock:
+            return list(self.prey_pids)
+
+    def pick_prey_pid(self):
+        """Retourne un PID de proie (et le retire de la liste) pour éviter 2 predators sur la même proie."""
+        with self._lock:
+            if not self.prey_pids:
+                return None
+            pid = next(iter(self.prey_pids))
+            self.prey_pids.remove(pid)
+            return pid
+
 
 # Temps qui passe 
 
