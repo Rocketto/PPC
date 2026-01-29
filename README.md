@@ -14,5 +14,3 @@ Pour recharger l'envrionnement python ensuite:
 ```shell
 source .venv/bin/activate
 ```
-
- 

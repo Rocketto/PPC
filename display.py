@@ -55,26 +55,26 @@ class Display:
             return line_proie, line_predateur, line_herbe
         
         # Bouton sécheresse
-        button_ax = plt.axes([0.05, 0.9, 0.15, 0.05])
-        button = Button(button_ax, "Secheresse")
-        button.label.set_color("red")
+        button_sech_ax = plt.axes([0.05, 0.9, 0.15, 0.05])
+        button_sech = Button(button_sech_ax, "Secheresse")
+        button_sech.label.set_color("red")
 
         # Callback du bouton sécheresse
         def activer_secheresse(event):
             os.kill(self.env_pid, signal.SIGUSR1)
 
-        button.on_clicked(activer_secheresse)
+        button_sech.on_clicked(activer_secheresse)
 
         # Bouton proie
-        button_ax = plt.axes([0.7, 0.9, 0.15, 0.05])
-        button = Button(button_ax, "Proie")
-        button.label.set_color("red")
+        button_proie_ax = plt.axes([0.7, 0.9, 0.15, 0.05])
+        button_proie = Button(button_proie_ax, "Proie")
+        button_proie.label.set_color("red")
 
         # Callback du bouton sécheresse
         def add_proie(event):
             os.kill(self.env_pid, signal.SIGUSR2)
 
-        button.on_clicked(add_proie)
+        button_proie.on_clicked(add_proie)
 
 
 
