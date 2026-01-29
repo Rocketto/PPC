@@ -37,7 +37,7 @@ def main():
 
     # Paramètres prey (possible recup depuis eco)
     energy = 55
-    hunger_threshold = 50     # si energy < 20 => manger
+    hunger_threshold = 10     # si energy < 20 => manger
     energy_loss_per_sec = 3
     eat_amount = 1            # herbe demandée par “bouchée”
     energy_gain_per_grass = 6  # 1 herbe -> +3 énergie
@@ -55,8 +55,8 @@ def main():
                 eaten = eco.take_grass(eat_amount)
                 if eaten > 0:
                     energy += eaten * energy_gain_per_grass
-                    print(
-                        f"[prey {pid}] ate {eaten} grass -> energy={energy} (grass_left={eco.get_grass_count()})")
+                    # print(f">>prey{pid} >>>>>>>>> state:")
+                    # print(f"[prey {pid}] ate {eaten} grass -> energy={energy} (grass_left={eco.get_grass_count()})")
                 else:
                     print(
                         f"[prey {pid}] hungry but no grass -> energy={energy}")

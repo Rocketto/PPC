@@ -17,7 +17,7 @@ class Display:
         plt.style.use("dark_background")
 
         fig, ax = plt.subplots()
-        ax.set_title("Populations (temps réel)")
+        ax.set_title("Populations")
         ax.set_xlabel("Temps")
         ax.set_ylabel("Population")
 
@@ -73,11 +73,22 @@ class Display:
         button_proie = Button(button_proie_ax, "Proie")
         button_proie.label.set_color("red")
 
-        # Callback du bouton sécheresse
+        # Callback du bouton proie
         def add_proie(event):
             os.kill(self.env_pid, signal.SIGUSR2)
 
         button_proie.on_clicked(add_proie)
+
+        # Bouton prédateur
+        button_predateur_ax = plt.axes([0.25, 0.9, 0.15, 0.05])
+        button_predateur = Button(button_predateur_ax, "Prédateur")
+        button_predateur.label.set_color("red")
+
+        # Callback du bouton prédateur
+        def add_predateur(event):
+            os.kill(self.env_pid, signal.SIGHUP)
+
+        button_predateur.on_clicked(add_predateur)
 
         ani = animation.FuncAnimation(fig, update, interval=50)
         plt.show()

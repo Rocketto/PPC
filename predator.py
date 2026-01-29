@@ -43,28 +43,38 @@ def main():
     m.connect()
     eco = m.get_ecosysteme()
 
+    # Enregistrement dans la mémoire partagée
+    eco.register_predator(pid)
+
     energy = 90
     hunger_threshold = 85
 
-    while True:
-        time.sleep(1)
-        energy -= 4
+    try:
+        while True:
+            time.sleep(1)
+            energy -= 4
 
-        if energy < hunger_threshold:
-            prey_pid = eco.pick_mangeable_prey()  # atomique: récupère + retire
-            if prey_pid is None:
-                print(f"[predator {pid}] hungry but no prey")
-                continue
+            if energy < hunger_threshold:
+                prey_pid = eco.pick_mangeable_prey()  # atomique: récupère + retire
+                if prey_pid is None:
+                    print(f"[predator {pid}] hungry but no prey")
+                    continue
 
-            # 3) tuer la proie (PID)
-            try:
-                os.kill(prey_pid, signal.SIGTERM)
-                energy += 70
-                print(
-                    f"[predator {pid}] ate prey pid={prey_pid} -> energy={energy}")
-            except ProcessLookupError:
-                # la proie était déjà morte
-                print(f"[predator {pid}] prey pid={prey_pid} already dead")
+                # 3) tuer la proie (PID)
+                try:
+                    os.kill(prey_pid, signal.SIGTERM)
+                    energy += 70
+                    print(
+                        f"[predator {pid}] ate prey pid={prey_pid} -> energy={energy}")
+                except ProcessLookupError:
+                    # la proie était déjà morte
+                    print(f"[predator {pid}] prey pid={prey_pid} already dead")
+            if energy < 0:
+                print(f"[prey {pid}] died (energy<0)")
+                break
+    finally:
+        # Si on meur on enleve le pid de la liste des prédateurs vivants
+        eco.unregister_predator(pid)
 
 
 if __name__ == "__main__":

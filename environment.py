@@ -28,7 +28,8 @@ class Ecosysteme:
         self.parametres = {
             "predator": {
                 "count": 1,
-                "reproduction": 0
+                "reproduction": 0,
+                "pids": []  # Tous les prédateurs vivants
             },
             "prey": {
                 "count": 10,
@@ -136,6 +137,16 @@ class Ecosysteme:
             if pid in self.parametres["prey"]["mangeables"]:
                 self.parametres["prey"]["mangeables"].remove(pid)
             return True
+
+    def register_predator(self, pid: int):
+        with self._lock:
+            if pid not in self.parametres["predator"]["pids"]:
+                self.parametres["predator"]["pids"].append(pid)
+
+    def unregister_predator(self, pid):
+        with self._lock:
+            if pid in self.parametres["predator"]["pids"]:
+                self.parametres["predator"]["pids"].remove(pid)
 
     def set_prey_mangeable(self, pid: int, mangeable: bool):
         with self._lock:
@@ -256,6 +267,9 @@ def run_manager_server():
 def handle_display_signal(signum, frame):
     if signum == signal.SIGUSR1:
         eco_global.active_secheresse()
+    elif signum == signal.SIGHUP:
+        subprocess.Popen([sys.executable, str(
+            BASE_DIR / "PPC" / "predator.py")])
     else:
         subprocess.Popen([sys.executable, str(BASE_DIR / "PPC" / "prey.py")])
 
@@ -265,6 +279,7 @@ if __name__ == "__main__":
     # Réception des signaux envoyés par Display
     signal.signal(signal.SIGUSR1, handle_display_signal)
     signal.signal(signal.SIGUSR2, handle_display_signal)
+    signal.signal(signal.SIGHUP, handle_display_signal)
 
     # Communication vers le display
     display_queue = Queue()
@@ -301,8 +316,8 @@ if __name__ == "__main__":
                 "env"]["grass"]["count"]
             population["prey"] = len(
                 eco_global.get_parametres()["prey"]["pids"])
-            population["predator"] = eco_global.get_parametres()[
-                "predator"]["count"]
+            population["predator"] = len(eco_global.get_parametres()[
+                "predator"]["pids"])
             display_queue.put(population)
             time.sleep(1)
     except KeyboardInterrupt:
