@@ -287,8 +287,7 @@ if __name__ == "__main__":
 
     # Communication vers le display
     display_queue = Queue()
-    display_process = Process(target=Display.start, args=(
-        Display(display_queue, os.getpid()),))
+    display_process = Process(target=Display.start, args=(Display(display_queue, os.getpid()),))
     display_process.start()
 
     # On crée un dictionnaire dans lequel on va entrer le nombre d'entités de chaque population
