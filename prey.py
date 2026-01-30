@@ -45,7 +45,7 @@ def main():
     energy_gain_per_grass = 6  # 1 herbe -> +3 énergie
 
     try:
-        while True:
+        while energy > 0:
             time.sleep(1)
             energy -= energy_loss_per_sec
 
@@ -63,9 +63,7 @@ def main():
                     print(
                         f"[prey {pid}] hungry but no grass -> energy={energy}")
 
-            if energy < 0:
-                print(f"[prey {pid}] died (energy<0)")
-                break
+        print(f"[prey {pid}] died (energy<0)")
     finally:
         # cleanup
         eco.set_prey_mangeable(pid, False)

@@ -51,15 +51,16 @@ def main():
     energy_loss_per_sec = 1
 
     try:
-        while True:
+        while energy > 0:
             time.sleep(1)
             energy -= energy_loss_per_sec
 
             if energy < hunger_threshold:
                 prey_pid = eco.pick_mangeable_prey()  # atomique: récupère + retire
                 if prey_pid is None:
-                    print(f"[predator {pid}] hungry but no prey")
+                    print(f"[predator {pid}] hungry({energy}) but no prey")
                     continue
+
 
                 # 3) tuer la proie (PID)
                 try:
@@ -73,9 +74,7 @@ def main():
                 except ProcessLookupError:
                     # la proie était déjà morte
                     print(f"[predator {pid}] prey pid={prey_pid} already dead")
-            if energy < 0:
-                print(f"[prey {pid}] died (energy<0)")
-                break
+        print(f"[prey {pid}] died (energy<0)")
     finally:
         # Si on meur on enleve le pid de la liste des prédateurs vivants
         eco.unregister_predator(pid)
